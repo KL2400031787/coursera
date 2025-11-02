@@ -1,0 +1,36 @@
+import mysql.connector
+
+# Connect to the database
+connection = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="yourpassword",
+    database="LittleLemon"
+)
+
+cursor = connection.cursor()
+
+# React to changes: Example - update booking status if guests exceed table capacity
+def manage_capacity():
+    query = """
+        SELECT b.BookingID, t.Capacity, b.NumberOfGuests
+        FROM Booking b
+        JOIN TableInfo t ON b.TableID = t.TableID
+        WHERE b.Status = 'Confirmed';
+    """
+    cursor.execute(query)
+    bookings = cursor.fetchall()
+
+    for booking in bookings:
+        booking_id, capacity, guests = booking
+        if guests > capacity:
+            cursor.execute("UPDATE Booking SET Status='Pending Approval' WHERE BookingID=%s", (booking_id,))
+            print(f"Booking {booking_id} exceeds capacity. Status updated.")
+
+    connection.commit()
+
+manage_capacity()
+print("Capacity check complete.")
+
+cursor.close()
+connection.close()
